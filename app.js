@@ -1,6 +1,8 @@
 const express = require('express')
 const fs = require('fs')
 const https = require('https')
+const bodyParser = require('body-parser')
+const cors = require('cors')
 
 // 创建 express 应用
 const app = express()
@@ -13,6 +15,9 @@ const credentials = { key: privateKey, cert: certificate }
 const httpsServer = https.createServer(credentials, app)
 const SSLPORT = 8082
 
+app.use(cors())
+app.use(bodyParser.urlencoded({ extended: true }))
+app.use(bodyParser.json())
 app.use('/', router)
 
 httpsServer.listen(SSLPORT, function () {

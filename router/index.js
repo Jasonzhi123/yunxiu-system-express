@@ -9,7 +9,7 @@ const {
 const router = express.Router()
 
 router.get('/', function (req, res) {
-  res.send('欢迎学习小慕读书管理后台')
+  res.send('欢迎一起看管理后台')
 })
 
 // 通过 userRouter 来处理 /user 路由，对路由处理进行解耦
