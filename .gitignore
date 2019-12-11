@@ -4,4 +4,4 @@ node_modules
 .DS_Store
 https
 .idea/
-db/config.js
+# db/config.js
