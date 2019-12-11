@@ -1,13 +1,17 @@
-const express = require('express')
+const express = require("express");
+const Result = require("../models/Result");
+const router = express.Router();
 
-const router = express.Router()
+router.post("/login", function(req, res, next) {
+  console.log(req.body);
+  const username = req.body.username;
+  const password = req.body.password;
 
-router.post('/login', function (req, res, next) {
-  console.log('/user/login', req.body)
-  res.json({
-    code: 0,
-    msg: '登录成功'
-  })
-})
+  if (username === "admin" && password === "1234567") {
+    new Result("登录成功").success(res);
+  } else {
+    new Result("登录失败").fail(res);
+  }
+});
 
-module.exports = router
+module.exports = router;
