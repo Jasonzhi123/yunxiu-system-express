@@ -4,7 +4,7 @@ module.exports = {
   CODE_TOKEN_EXPIRED: -2,
   debug: true,
   PWD_SALT: 'admin_imooc_node',
-  PRIVATE_KEY: 'admin_imooc_node_test_youbaobao_xyz',
-  JWT_EXPIRED: 60 * 60,
+  PRIVATE_KEY: 'yiqikan_system_node_system_jasonzhi_cn',
+  JWT_EXPIRED: 60 * 60 * 24 * 7,
   MIME_TYPE_EPUB: 'application/epub+zip'
 }
