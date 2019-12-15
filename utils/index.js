@@ -7,6 +7,7 @@ function md5(s) {
   return crypto.createHash('md5')
     .update(String(s)).digest('hex');
 }
+
 function decode(req) {
   const authorization = req.get('Authorization')
   console.log('Authorization', authorization);
