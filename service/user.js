@@ -1,10 +1,14 @@
-const { querySql } = require('../db')
+const { querySql, queryOne } = require('../db')
 
 function login(username, password) {
   const sql = `select * from admin_user where username='${username}' and password='${password}'`
   return querySql(sql)
 }
-
+function findUser(username, id) {
+  const sql = `select * from admin_user where username='${username}' and id='${id}'`
+  return queryOne(sql)
+}
 module.exports = {
-  login
+  login,
+  findUser
 }
