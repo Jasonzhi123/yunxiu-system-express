@@ -1,6 +1,6 @@
 
 const { env } = require('./env')
-const UPLOAD_PATH = env === 'dev' ? 'C:/nginx/fileResources' : '/root/upload/admin-upload/ebook'
+const UPLOAD_PATH = env === 'dev' ? 'C:/nginx/fileResources/epub' : '/root/upload/admin-upload/ebook'
 
 const OLD_UPLOAD_URL = env === 'dev' ? 'http:localhost:3000/book/res/img' : 'https://www.youbaobao.xyz/book/res/img'
 const UPLOAD_URL = env === 'dev' ? 'http:localhost:3000/admin-upload-ebook' : 'https://www.youbaobao.xyz/admin-upload-ebook'

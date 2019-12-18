@@ -123,23 +123,135 @@ class Book {
                 resolve(this)
               }
             }
-            epub.getImage(cover, handleGetImage) // 获取封面图片
-            // try {
-            //   this.unzip() // 解压电子书
-            //   this.parseContents(epub).then(({ chapters, chapterTree }) => {
-            //     this.contents = chapters
-            //     this.contentsTree = chapterTree
-            //     epub.getImage(cover, handleGetImage) // 获取封面图片
-            //   }).catch(err => reject(err)) // 解析目录
-            // } catch (e) {
-            //   reject(e)
-            // }
+
+            try {
+              this.unzip() // 解压电子书
+              this.parseContents(epub).then(({ chapters, chapterTree }) => {
+                this.contents = chapters
+                this.contentsTree = chapterTree
+                epub.getImage(cover, handleGetImage) // 获取封面图片
+              }).catch(err => reject(err)) // 解析目录
+            } catch (e) {
+              reject(e)
+            }
           }
         }
       })
       epub.parse()
       this.epub = epub
     })
+  }
+
+  // 电子书目录解析
+  parseContents(epub) {
+    // 获取ncx文件路径
+    function getNcxFilePath() {
+      const spine = epub && epub.spine
+      const manifest = epub && epub.manifest
+      const ncx = spine.toc && spine.toc.href
+      const id = spine.toc && spine.toc.id
+      return ncx ? ncx : manifest[id].href
+    }
+
+    // 查询当前目录的父级目录及规定层次
+    function findParent(array, level = 0, pid = '') {
+      return array.map(item => {
+        item.level = level
+        item.pid = pid
+        if (item.navPoint && item.navPoint.length) {
+          item.navPoint = findParent(item.navPoint, level + 1, item['$'].id)
+        } else if (item.navPoint) {
+          item.navPoint.level = level + 1
+          item.navPoint.pid = item['$'].id
+        }
+        return item
+      })
+    }
+    // 将目录转为一维数组
+    function flatten(array) {
+      return [].concat(...array.map(item => {
+        if (item.navPoint && item.navPoint.length) {
+          return [].concat(item, ...flatten(item.navPoint))
+        } else if (item.navPoint) {
+          return [].concat(item, item.navPoint)
+        } else {
+          return item
+        }
+      }))
+    }
+    const ncxFilePath = Book.genPath(`${this.unzipPath}/${getNcxFilePath()}`)// 获取ncx文件路径
+    console.log(`${this.unzipPath}/${getNcxFilePath()}`);
+    console.log(ncxFilePath);
+    if (fs.existsSync(ncxFilePath)) {
+      return new Promise((resolve, reject) => {
+        const xml = fs.readFileSync(ncxFilePath, 'utf-8') // 读取ncx文件
+        const fileName = this.fileName
+        // 将ncx文件从xml转为json
+        xml2js(xml, {
+          explicitArray: false, // 设置为false时，解析结果不会包裹array
+          ignoreAttrs: false  // 解析属性
+        }, function (err, json) {
+          if (err) {
+            return reject(err)
+          }
+          const navMap = json.ncx.navMap // 获取ncx的navMap属性
+
+          // 如果navMap属性存在navPoint属性，则说明目录存在
+          if (navMap.navPoint) {
+            navMap.navPoint = findParent(navMap.navPoint)
+            const newNavMap = flatten(navMap.navPoint) // 将目录拆分为扁平结构
+            const chapters = []
+            epub.flow.forEach((chapter, index) => { // 遍历epub解析出来的目录
+              // 如果目录大于从ncx解析出来的数量，则直接跳过
+              if (index + 1 > newNavMap.length) {
+                return
+              }
+              const nav = newNavMap[index] // 根据index找到对应的navMap
+              chapter.text = `${UPLOAD_URL}/unzip/${fileName}/${chapter.href}` // 生成章节的URL
+              chapter.label = nav && nav.navLabel ? nav.navLabel.text || '' : '' // 从ncx文件中解析出目录的标题
+              chapter.level = nav.level
+              chapter.pid = nav.pid
+              chapter.navId = nav['$'].id
+              chapter.fileName = fileName
+              chapter.order = index + 1
+              chapters.push(chapter)
+            })
+            const chapterTree = Book.genContentsTree(chapters)// 将目录转化为树状结构
+            resolve({ chapters, chapterTree })
+          } else {
+            reject(new Error('目录解析失败，navMap.navPoint error'))
+          }
+        })
+      })
+    } else {
+      throw new Error('文件目录不存在')
+    }
+  }
+  // 解压电子书
+  unzip() {
+    const AdmZip = require('adm-zip')
+    const zip = new AdmZip(Book.genPath(this.path)) // 解析文件路径
+    zip.extractAllTo(Book.genPath(this.unzipPath), true)
+  }
+
+  static genPath(path) {
+    return path.startsWith('/') ? `${UPLOAD_PATH}${path}` : `${UPLOAD_PATH}/${path}`
+  }
+
+  static genContentsTree(contents) {
+    if (contents) {
+      const contentsTree = []
+      contents.forEach(c => {
+        c.children = []
+        if (c.pid === '') {
+          contentsTree.push(c)
+        } else {
+          const parent = contents.find(_ => _.navId === c.pid)
+          parent.children.push(c)
+        }
+      })
+      return contentsTree
+    }
   }
 }
 module.exports = Book
