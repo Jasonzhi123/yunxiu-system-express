@@ -17,9 +17,8 @@ class Book {
       this.createBookFromData(data)
     }
   }
-
+  // 创建书籍信息
   createBookFromFile(file) {
-    console.log(file);
     const {
       destination, // 文件本地存储目录
       filename, // 文件名称
@@ -30,12 +29,12 @@ class Book {
 
     const suffix = mimetype === MIME_TYPE_EPUB ? '.epub' : '' // 电子书的文件后缀名
     const oldBookPath = path // 电子书的原有路径
-    const bookPath = `${destination}\\${filename}${suffix}` // 电子书的新路径  
+    const bookPath = `${destination}/${filename}${suffix}` // 电子书的新路径  
     const url = `${UPLOAD_URL}/book/${filename}${suffix}` // 电子书的下载URL 
     const unzipPath = `${UPLOAD_PATH}/unzip/${filename}` // 电子书解压后的文件夹路径
     const unzipUrl = `${UPLOAD_URL}/unzip/${filename}` // 电子书解压后的文件夹URL
 
-    if (!fs.existsSync(unzipPath)) {
+    if (!fs.existsSync(unzipPath)) { //判断是否存在
       fs.mkdirSync(unzipPath, { recursive: true })
     }
     if (fs.existsSync(oldBookPath) && !fs.existsSync(bookPath)) {
@@ -93,6 +92,7 @@ class Book {
         reject(err)
       })
       epub.on('end', err => {
+        // console.log('end', epub.manifest);
         if (err) {
           reject(err)
         } else {
@@ -100,20 +100,25 @@ class Book {
           if (!title) {
             reject(new Error('书籍名称为空'))
           } else {
-            this.title = title
-            this.language = language || 'en'
-            this.author = creator || creatorFileAs || 'unknown'
-            this.publisher = publisher || 'unknown'
+            this.title = title //书名
+            this.language = language || 'en'//语言
+            this.author = creator || creatorFileAs || 'unknown'//作者
+            this.publisher = publisher || 'unknown'//出版社
             this.rootFile = epub.rootFile
             const handleGetImage = (error, imgBuffer, mimeType) => {
               if (error) {
                 reject(error)
               } else {
                 const suffix = mimeType.split('/')[1]
-                const coverPath = `${UPLOAD_PATH}\\img\\${this.fileName}.${suffix}`
-                const coverUrl = `${UPLOAD_URL}\\img\\${this.fileName}.${suffix}`
+                const coverPath = `${UPLOAD_PATH}/img/${this.fileName}.${suffix}`//封面存放路径
+                const coverUrl = `${UPLOAD_URL}/img/${this.fileName}.${suffix}`
+
+                //判断是否存在img文件夹
+                if (!fs.existsSync(`${UPLOAD_PATH}/img`)) {
+                  fs.mkdirSync(`${UPLOAD_PATH}/img`, { recursive: true })
+                }
                 fs.writeFileSync(coverPath, imgBuffer, 'binary')
-                this.coverPath = `\\img\\${this.fileName}.${suffix}`
+                this.coverPath = `/img/${this.fileName}.${suffix}`
                 this.cover = coverUrl
                 resolve(this)
               }

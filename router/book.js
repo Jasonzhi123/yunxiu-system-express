@@ -7,12 +7,11 @@ const Book = require('../models/Book')
 const boom = require('boom')
 
 router.post('/upload', multer({ dest: `${UPLOAD_PATH}/book` }).single('file'), (req, res, next) => {
-  console.log(req.file);
-  console.log(UPLOAD_PATH)
   if (!req.file || req.file.length === 0) {
     new Result('上传电子书失败').fail(res)
   } else {
     let book = new Book(req.file)
+    console.log(book);
     book.parse().then(book => {
       new Result(book, '上传电子书成功').success(res)
     }).catch(err => {
