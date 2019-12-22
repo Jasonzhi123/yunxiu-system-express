@@ -180,12 +180,13 @@ class Book {
       }))
     }
     const ncxFilePath = Book.genPath(`${this.unzipPath}/${getNcxFilePath()}`)// 获取ncx文件路径
-    console.log(`${this.unzipPath}/${getNcxFilePath()}`);
-    console.log(ncxFilePath);
     if (fs.existsSync(ncxFilePath)) {
       return new Promise((resolve, reject) => {
         const xml = fs.readFileSync(ncxFilePath, 'utf-8') // 读取ncx文件
+        const dir = path.dirname(ncxFilePath).replace(UPLOAD_PATH, '')
         const fileName = this.fileName
+        const unzipPath = this.unzipPat
+
         // 将ncx文件从xml转为json
         xml2js(xml, {
           explicitArray: false, // 设置为false时，解析结果不会包裹array
@@ -201,17 +202,17 @@ class Book {
             navMap.navPoint = findParent(navMap.navPoint)
             const newNavMap = flatten(navMap.navPoint) // 将目录拆分为扁平结构
             const chapters = []
-            epub.flow.forEach((chapter, index) => { // 遍历epub解析出来的目录
+            newNavMap.forEach((chapter, index) => { // 遍历epub解析出来的目录
               // 如果目录大于从ncx解析出来的数量，则直接跳过
               if (index + 1 > newNavMap.length) {
                 return
               }
-              const nav = newNavMap[index] // 根据index找到对应的navMap
-              chapter.text = `${UPLOAD_URL}/unzip/${fileName}/${chapter.href}` // 生成章节的URL
-              chapter.label = nav && nav.navLabel ? nav.navLabel.text || '' : '' // 从ncx文件中解析出目录的标题
-              chapter.level = nav.level
-              chapter.pid = nav.pid
-              chapter.navId = nav['$'].id
+              const src = chapter.content['$'].src
+              chapter.id = `${src}`
+              chapter.href = `${dir}/${src}`.replace(unzipPath, '')
+              chapter.text = `${UPLOAD_URL}${dir}/${src}` // 生成章节的URL
+              chapter.label = chapter.navLabel.text || ''// 从ncx文件中解析出目录的标题
+              chapter.navId = chapter['$'].id
               chapter.fileName = fileName
               chapter.order = index + 1
               chapters.push(chapter)
@@ -234,10 +235,12 @@ class Book {
     zip.extractAllTo(Book.genPath(this.unzipPath), true)
   }
 
+  // 获取路径信息
   static genPath(path) {
     return path.startsWith('/') ? `${UPLOAD_PATH}${path}` : `${UPLOAD_PATH}/${path}`
   }
 
+  // 将目录转化为树状结构
   static genContentsTree(contents) {
     if (contents) {
       const contentsTree = []
@@ -247,7 +250,7 @@ class Book {
           contentsTree.push(c)
         } else {
           const parent = contents.find(_ => _.navId === c.pid)
-          parent.children.push(c)
+            .children.push(c)
         }
       })
       return contentsTree
