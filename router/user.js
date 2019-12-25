@@ -43,7 +43,7 @@ router.get('/info', function (req, res, next) {
   if (decoded && decoded.username && decoded.id) {
     findUser(decoded.username, decoded.id).then(user => {
       if (user && user.length !== 0) {
-        user['roles'] = user.role
+        user['roles'] = user.role.split(',')
         new Result(user, '获取用户信息成功').success(res)
       } else {
         new Result('获取用户信息失败').fail(res)
